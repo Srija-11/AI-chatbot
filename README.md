@@ -1,7 +1,7 @@
-<<<<<<< HEAD
+
 # 💬 Chatbot
 
-A streaming AI chatbot. Express backend, vanilla JS frontend, no database, deployable on Vercel.
+A streaming AI chatbot. Express and Nodejs backend, vanilla JS frontend, no database, deployable on Vercel.
 
 ## Features
 - Token-by-token streaming over Server-Sent Events (SSE) with a Stop button
