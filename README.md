@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 💬 Chatbot
 
 A streaming AI chatbot. Express backend, vanilla JS frontend, no database, deployable on Vercel.
@@ -37,3 +38,5 @@ src/routes/chat.js    validation + SSE streaming
 src/services/llm.js   model client, personas, demo mode
 tests/                node:test integration tests
 ```
+=======
+
