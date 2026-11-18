@@ -1,5 +1,6 @@
 
-# 💬 Chatbot
+# 💬 Chatbot-Live demo
+https://ai-chatbot-nine-plum.vercel.app/
 
 A streaming AI chatbot. Express and Nodejs backend, vanilla JS frontend, no database, deployable on Vercel.
 
