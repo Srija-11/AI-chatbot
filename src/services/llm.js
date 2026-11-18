@@ -1,7 +1,6 @@
 
 const config = require('../config');
 
-// No key -> demo mode, so the app still runs end to end
 const PERSONAS = {
   assistant:
     'You are a helpful, concise assistant. Use markdown code blocks for code.',
@@ -16,10 +15,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function demoReply(messages, onText, signal) {
   const last = messages[messages.length - 1].content;
 
-  const text = `**Demo mode** (no Gemini API key set). You said: "${last.slice(
+  const text = `**Demo mode** (no Groq API key set). You said: "${last.slice(
     0,
     200
-  )}". Add GEMINI_API_KEY to get real answers.`;
+  )}". Add GROQ_API_KEY to get real answers.`;
 
   for (const word of text.split(' ')) {
     if (signal?.aborted) return;
@@ -33,44 +32,39 @@ async function streamReply({ messages, persona, onText, signal }) {
     return demoReply(messages, onText, signal);
   }
 
-  const url = new URL(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
-      config.model
-    )}:streamGenerateContent`
-  );
-
-  url.searchParams.set('alt', 'sse');
-  url.searchParams.set('key', config.apiKey);
-
-  const contents = messages.map((message) => ({
-    role: message.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: message.content }],
-  }));
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
+  const groqMessages = [
+    {
+      role: 'system',
+      content: PERSONAS[persona] || PERSONAS.assistant,
     },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: PERSONAS[persona] || PERSONAS.assistant }],
+    ...messages,
+  ];
+
+  const response = await fetch(
+    'https://api.groq.com/openai/v1/chat/completions',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
       },
-      contents,
-      generationConfig: {
-        maxOutputTokens: config.maxTokens,
-      },
-    }),
-    signal,
-  });
+      body: JSON.stringify({
+        model: config.model,
+        messages: groqMessages,
+        max_completion_tokens: config.maxTokens,
+        stream: true,
+      }),
+      signal,
+    }
+  );
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+    throw new Error(`Groq API error (${response.status}): ${errorText}`);
   }
 
   if (!response.body) {
-    throw new Error('Gemini returned an empty response stream.');
+    throw new Error('Groq returned an empty response stream.');
   }
 
   const reader = response.body.getReader();
@@ -81,19 +75,20 @@ async function streamReply({ messages, persona, onText, signal }) {
     if (!line.startsWith('data:')) return;
 
     const data = line.slice(5).trim();
+
     if (!data || data === '[DONE]') return;
 
     const chunk = JSON.parse(data);
 
     if (chunk.error) {
-      throw new Error(chunk.error.message || 'Gemini API request failed.');
+      throw new Error(chunk.error.message || 'Groq request failed.');
     }
 
-    const text = chunk.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text || '')
-      .join('');
+    const text = chunk.choices?.[0]?.delta?.content;
 
-    if (text) onText(text);
+    if (typeof text === 'string' && text.length > 0) {
+      onText(text);
+    }
   }
 
   try {

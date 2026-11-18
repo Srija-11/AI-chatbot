@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-delete process.env.GEMINI_API_KEY;; // force demo mode
+process.env.GROQ_API_KEY = ''; // force demo mode
 const app = require('../src/app');
 
 let server, base;
